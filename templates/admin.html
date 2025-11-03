@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Panel de Administración</h3>
+    <p>Has iniciado sesión como Administrador.</p>
+
+    <hr>
+    
+    <h4>Gestión de Usuarios ({{ usuarios|length }})</h4>
+    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+        {% for u in usuarios %}
+            <div class="libro">
+                <span>
+                    ID: {{ u.id }} | <strong>{{ u.username }}</strong>
+                    {% if u.is_admin %} (Admin) {% endif %}
+                </span>
+                <span class="libro-actions">
+                    {% if not u.is_admin %}
+                    <a href="{{ url_for('borrar_usuario_admin', id_usuario=u.id) }}" 
+                       style="color: red;" 
+                       onclick="return confirm('¿Seguro que quieres borrar a {{ u.username }} y todos sus libros?')">
+                       Borrar Usuario
+                    </a>
+                    {% endif %}
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h4 style="margin-top: 20px;">Todos los Libros del Sitio ({{ libros|length }})</h4>
+    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
+        {% for libro in libros %}
+            <div class="libro {% if libro.leido %}leido{% endif %}">
+                <span>
+                    <strong>{{ libro.titulo }}</strong> - <em>{{ libro.autor }}</em>
+                    (Dueño: {{ libro.propietario.username }})
+                </span>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Biblioteca</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .nav { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px; }
+        .nav-links a { margin-left: 15px; text-decoration: none; color: #007bff; }
+        .flash { padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
+        .libro { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .libro.leido { text-decoration: line-through; color: #888; }
+        .libro-actions a { margin-left: 10px; text-decoration: none; }
+        form input { margin-bottom: 10px; width: calc(50% - 10px); padding: 8px; }
+        form button { padding: 8px 12px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="nav">
+            <h2>Mi Biblioteca Personal</h2>
+           <div class="nav-links">
+    {% if current_user.is_authenticated %}
+        <span>Hola, {{ current_user.username }}</span>
+        
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('admin_dashboard') }}" style="color: red; font-weight: bold;">Panel Admin</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}">Cerrar Sesión</a>
+    {% else %}
+        <a href="{{ url_for('login') }}">Iniciar Sesión</a>
+        <a href="{{ url_for('register') }}">Registrarse</a>
+    {% endif %}
+</div>
+        </nav>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

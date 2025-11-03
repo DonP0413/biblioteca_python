@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Añadir Nuevo Libro (Create)</h3>
+    <form action="{{ url_for('agregar_libro') }}" method="POST">
+        <input type="text" name="titulo" placeholder="Título del libro" required>
+        <input type="text" name="autor" placeholder="Autor" required>
+        <button type="submit">Añadir</button>
+    </form>
+
+    <hr>
+
+    <h3>Tus Libros (Read, Update, Delete)</h3>
+    {% if libros %}
+        {% for libro in libros %}
+            <div class="libro {% if libro.leido %}leido{% endif %}">
+                <span>
+                    <strong>{{ libro.titulo }}</strong> - <em>{{ libro.autor }}</em>
+                </span>
+                <span class="libro-actions">
+                    <a href="{{ url_for('actualizar_libro', id_libro=libro.id) }}">
+                        {% if libro.leido %}Marcar como No Leído{% else %}Marcar como Leído{% endif %}
+                    </a>
+                    <a href="{{ url_for('borrar_libro', id_libro=libro.id) }}" style="color: red;">Borrar</a>
+                </span>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No tienes ningún libro en tu biblioteca. ¡Añade uno!</p>
+    {% endif %}
+{% endblock %}
