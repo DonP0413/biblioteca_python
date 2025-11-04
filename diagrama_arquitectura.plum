@@ -1,0 +1,30 @@
+@startuml
+actor "Cliente (Navegador)" as Client
+participant "Controlador\n(app.py - Rutas Flask)" as Controller
+participant "Vista\n(Templates - Jinja2)" as View
+participant "Modelo\n(app.py - SQLAlchemy)" as Model
+database "Base de Datos\n(MySQL)" as DB
+
+Client -> Controller: 1. Petición HTTP (ej. GET /biblioteca)
+activate Controller
+
+Controller -> Model: 2. Solicita datos (ej. "dame los libros")
+activate Model
+
+Model -> DB: 3. Ejecuta consulta SQL
+activate DB
+DB --> Model: 4. Devuelve datos (filas de la BD)
+deactivate DB
+
+Model --> Controller: 5. Devuelve objetos Python (lista de libros)
+deactivate Model
+
+Controller -> View: 6. Pasa los datos a la plantilla HTML
+activate View
+View --> Controller: 7. Devuelve HTML renderizado
+deactivate View
+
+Controller --> Client: 8. Respuesta HTTP (Página HTML)
+deactivate Controller
+
+@enduml

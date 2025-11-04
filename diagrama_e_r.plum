@@ -1,0 +1,27 @@
+@startuml
+skinparam linetype ortho
+
+' Definición de Entidades
+entity "usuario" {
+  * **id** : integer <<PK>>
+  --
+  * username : varchar(80) <<unique>>
+  * password_hash : varchar(128)
+  * is_admin : boolean
+}
+
+entity "libro" {
+  * **id** : integer <<PK>>
+  --
+  * titulo : varchar(200)
+  * autor : varchar(100)
+  * leido : boolean
+  --
+  * **usuario_id** : integer <<FK>>
+}
+
+' Definición de la Relación
+' Un usuario "posee" uno o muchos libros
+' Un libro "pertenece a" exactamente un usuario
+usuario ||--o{ libro : "posee"
+@enduml
