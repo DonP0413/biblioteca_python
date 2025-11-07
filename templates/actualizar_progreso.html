@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Actualizar Progreso</h3>
+    <p>Estás actualizando: <strong>{{ libro.titulo }}</strong> <em>(Total: {{ libro.paginas_totales }} páginas)</em></p>
+    
+    <form method="POST"> <div class="form-group">
+            <label for="pagina_actual">¿En qué página vas?</label>
+            <input type="number" 
+                   id="pagina_actual" 
+                   name="pagina_actual" 
+                   class="form-control" 
+                   value="{{ libro.pagina_actual }}"
+                   min="0"
+                   max="{{ libro.paginas_totales }}">
+        </div>
+        
+        <button type="submit" class="btn btn-primario" style="margin-top: 10px;">Guardar Progreso</button>
+        <a href="{{ url_for('biblioteca') }}" style="margin-left: 10px; color: #555;">Cancelar</a>
+    </form>
+{% endblock %}

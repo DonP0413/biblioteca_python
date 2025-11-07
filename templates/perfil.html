@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3>Editar Perfil</h3>
+
+    <form method="POST" action="{{ url_for('perfil') }}">
+        
+        <h4>Selecciona tu Avatar</h4>
+        <div class="avatar-selector">
+            {% set avatares = [
+                '/static/avatars/default.jpg', 
+                '/static/avatars/avatar1.jpg', 
+                '/static/avatars/avatar2.jpg', 
+                '/static/avatars/avatar3.jpg', 
+                '/static/avatars/avatar4.jpg'
+            ] %}
+            
+            {% for avatar in avatares %}
+            <div>
+                <input type="radio" 
+                       name="avatar" 
+                       id="avatar-{{ loop.index }}" 
+                       value="{{ avatar }}"
+                       {% if current_user.avatar_img == avatar %}checked{% endif %}>
+                       
+                <label for="avatar-{{ loop.index }}">
+                    <img src="{{ avatar }}" alt="Avatar {{ loop.index }}">
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--color-fondo); margin: 30px 0;">
+
+        <h4>Cambiar mi Contraseña</h4>
+        <p style="font-size: 0.9em; color: #555;">(Deja estos campos en blanco si no quieres cambiar tu contraseña)</p>
+        
+        <div class="form-group">
+            <label for="password_actual">Contraseña Actual:</label>
+            <input type="password" id="password_actual" name="password_actual" class="form-control" placeholder="Escribe tu contraseña actual...">
+        </div>
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="password_nueva">Nueva Contraseña:</label>
+            <input type="password" id="password_nueva" name="password_nueva" class="form-control" placeholder="Escribe tu nueva contraseña...">
+        </div>
+        <div class="form-group">
+            <label for="password_confirm">Confirmar Nueva Contraseña:</label>
+            <input type="password" id="password_confirm" name="password_confirm" class="form-control" placeholder="Confirma tu nueva contraseña...">
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--color-fondo); margin: 30px 0;">
+        
+        <h4>Pregunta de Seguridad</h4>
+
+        {% if current_user.security_question %}
+            <p>Ya tienes una pregunta de seguridad configurada:</p>
+            <strong>{{ current_user.security_question }}</strong>
+            <p style="font-size: 0.9em; color: #555;">(Para cambiarla, configura una nueva abajo)</p>
+        {% else %}
+            <div class="flash danger" style="text-align: left;">
+                <strong>¡Importante!</strong> Configura tu pregunta de seguridad. Sin esto, no podrás recuperar tu cuenta si olvidas tu contraseña.
+            </div>
+        {% endif %}
+
+        <div class="form-group" style="margin-top: 20px;">
+            <label for="security_question">Elige tu pregunta:</label>
+            <select name="security_question" class="form-control">
+                <option value="">-- Selecciona una pregunta --</option>
+                <option value="¿Cuál es el nombre de tu primera mascota?">¿Cuál es el nombre de tu primera mascota?</option>
+                <option value="¿Cuál es tu ciudad de nacimiento?">¿Cuál es tu ciudad de nacimiento?</option>
+                <option value="¿Cuál es el segundo nombre de tu madre?">¿Cuál es el segundo nombre de tu madre?</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="security_answer">Respuesta (sensible a mayúsculas):</label>
+            <input type="text" name="security_answer" class="form-control" placeholder="Escribe tu respuesta secreta...">
+        </div>
+        <div class="form-group">
+            <label for="password_actual_sec">Confirma con tu Contraseña Actual:</label>
+            <input type="password" id="password_actual_sec" name="password_actual_sec" class="form-control" placeholder="Escribe tu contraseña actual para confirmar...">
+            <small style="font-size: 0.8em; color: #555;">(Requerido para guardar tu pregunta)</small>
+        </div>
+        <button type="submit" class="btn btn-primario" style="margin-top: 20px;">Guardar Cambios</button>
+    </form>
+{% endblock %}

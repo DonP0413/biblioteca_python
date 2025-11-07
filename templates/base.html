@@ -198,6 +198,78 @@
             color: var(--color-texto);
             margin-top: 30px;
         }
+                /* --- Estilos para Avatares (NUEVO) --- */
+        .avatar-nav {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* Redondo */
+            border: 2px solid var(--color-blanco);
+            margin-right: 10px;
+            vertical-align: middle; /* Centra con el texto */
+        }
+
+        .avatar-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .avatar-selector label {
+            cursor: pointer;
+            border-radius: 50%;
+            padding: 5px;
+            border: 3px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        .avatar-selector img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+        }
+        /* Oculta el radio button real */
+        .avatar-selector input[type="radio"] {
+            display: none;
+        }
+        /* Estilo cuando el radio está seleccionado */
+        .avatar-selector input[type="radio"]:checked + label {
+            border-color: var(--color-primario);
+            /* --- Estilos para Progreso (NUEVO) --- */
+.progress-container {
+    width: 100%;
+    background-color: var(--color-fondo);
+    border-radius: 4px;
+    height: 10px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 10px;
+    background-color: var(--color-acento); /* Color turquesa */
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.progress-text {
+    font-size: 0.9em;
+    color: #555;
+}
+.libro-progress {
+    flex-grow: 1; /* Ocupa el espacio del medio */
+    max-width: 200px; /* Límite de ancho */
+    margin: 0 15px;
+}
+.btn-update {
+    color: var(--color-blanco);
+    background-color: var(--color-acento);
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+.btn-update:hover {
+    background-color: #16a085;
+}
+        }
 
     </style>
 </head>
@@ -205,20 +277,29 @@
     <div class="container">
         <nav class="nav">
             <h2><a href="/" style="color: white; text-decoration: none;">📚 Mi Biblioteca</a></h2>
+          <nav class="nav">
+            <h2><a href="/" style="color: white; text-decoration: none;">📚 Mi Biblioteca</a></h2>
             <div class="nav-links">
+                
                 {% if current_user.is_authenticated %}
+                    <img src="{{ current_user.avatar_img }}" alt="Avatar" class="avatar-nav">
+                    
                     <span>Hola, {{ current_user.username }}</span>
+                    <a href="{{ url_for('perfil') }}" style="background-color: rgba(255, 255, 255, 0.1);">Editar Perfil</a>
                     
                     {% if current_user.is_admin %}
                         <a href="{{ url_for('admin_dashboard') }}" class="admin-link">Panel Admin</a>
                     {% endif %}
 
                     <a href="{{ url_for('logout') }}">Cerrar Sesión</a>
+                    
                 {% else %}
                     <a href="{{ url_for('login') }}">Iniciar Sesión</a>
                     <a href="{{ url_for('register') }}">Registrarse</a>
                 {% endif %}
+
             </div>
+        </nav>
         </nav>
 
         <div class="content-wrapper">
