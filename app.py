@@ -1,9 +1,11 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func, desc
 from functools import wraps
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
+from datetime import datetime, timedelta
 
 # --- Configuración Inicial ---
 app = Flask(__name__)
@@ -77,13 +79,54 @@ class Libro(db.Model):
     autor = db.Column(db.String(100), nullable=False)
     leido = db.Column(db.Boolean, default=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
-
-    # --- LÍNEAS NUEVAS ---
-    # Usamos nullable=False y default=0 para asegurarnos de que siempre tengan un valor.
+    
+    # Campos de progreso (existentes)
     paginas_totales = db.Column(db.Integer, nullable=False, default=0)
     pagina_actual = db.Column(db.Integer, nullable=False, default=0)
+
+    # --- LÍNEAS NUEVAS ---
+    # Usamos nullable=True para que sean opcionales
+    ano_publicacion = db.Column(db.Integer, nullable=True)
+    fecha_leido = db.Column(db.DateTime, nullable=True) # Para el reporte de admin
+    
+    # Clave foránea para la relación con Genero
+    genero_id = db.Column(db.Integer, db.ForeignKey('genero.id'), nullable=True)
     # --------------------
 
+# --- TABLA NUEVA: Genero ---
+# Esta tabla guardará los géneros (Fantasía, Ciencia Ficción, etc.)
+class Genero(db.Model):
+    __tablename__ = 'genero'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
+    
+    # Relación inversa: Un género puede estar en muchos libros
+    libros = db.relationship('Libro', backref='genero', lazy=True)
+
+    def __repr__(self):
+        return f'<Genero {self.nombre}>'
+    
+
+# ... (tu clase Genero termina aquí) ...
+
+def inicializar_generos():
+    """Función para añadir géneros por defecto a la BD si está vacía."""
+    # Revisa si la tabla Genero ya tiene datos
+    if Genero.query.count() == 0:
+        print("Poblando la tabla de géneros...")
+        generos_por_defecto = [
+            'Fantasía', 'Ciencia Ficción', 'Terror', 'Misterio', 
+            'Novela Histórica', 'Biografía', 'Técnico', 'Clásico', 'Otro'
+        ]
+        
+        for nombre in generos_por_defecto:
+            nuevo_genero = Genero(nombre=nombre)
+            db.session.add(nuevo_genero)
+        
+        db.session.commit()
+        print("Géneros añadidos.")
+    else:
+        print("La tabla de géneros ya está poblada.")
 # Función de Flask-Login para cargar un usuario desde la sesión
 @login_manager.user_loader
 # Función de Flask-Login para cargar un usuario desde la sesión
@@ -219,31 +262,29 @@ def logout():
     return redirect(url_for('login'))
 
 # --- Rutas CRUD (Biblioteca) ---
+# (Asegúrate de tener 'from datetime import datetime' al inicio de tu app.py)
 
 @app.route('/')
 @login_required 
 def biblioteca():
-    # --- Lógica de Búsqueda (NUEVO) ---
-    # Obtenemos el término de búsqueda de la URL (ej. /?q=Quijote)
-    termino_busqueda = request.args.get('q', '') # 'q' es el nombre del input
-
-    # Empezamos la consulta base
+    # --- Lógica de Búsqueda (Existente) ---
+    termino_busqueda = request.args.get('q', '') 
     query_base = Libro.query.filter_by(propietario=current_user)
-
-    # Si hay un término de búsqueda, filtramos la consulta
     if termino_busqueda:
-        # Usamos .like() para buscar coincidencias parciales (case-insensitive con 'ilike')
         query_base = query_base.filter(Libro.titulo.ilike(f"%{termino_busqueda}%"))
     
-    # Ejecutamos la consulta final
     libros_del_usuario = query_base.all()
-    # ------------------------------------
+    
+    # --- Lógica Nueva ---
+    # Obtenemos todos los géneros para el <select> del formulario
+    generos = Genero.query.all()
+    # -------------------
 
-    # Pasamos el término de búsqueda de vuelta a la plantilla
-    # para que la barra de búsqueda no se borre.
     return render_template('biblioteca.html', 
                            libros=libros_del_usuario, 
-                           termino_busqueda=termino_busqueda)
+                           termino_busqueda=termino_busqueda,
+                           generos=generos) # Pasamos los géneros
+
 @app.route('/agregar', methods=['POST'])
 @login_required
 def agregar_libro():
@@ -251,14 +292,21 @@ def agregar_libro():
         titulo = request.form['titulo']
         autor = request.form['autor']
         
-        # --- Campo Nuevo ---
-        # Obtenemos el total de páginas. Si está vacío, guardamos 0.
+        # --- Campos Nuevos ---
         try:
-            paginas_totales = int(request.form['paginas_totales'])
-            if paginas_totales < 0:
-                paginas_totales = 0
+            paginas_totales = int(request.form['paginas_totales']) if request.form['paginas_totales'] else 0
         except ValueError:
             paginas_totales = 0
+
+        try:
+            # 'None' si el campo viene vacío
+            ano_publicacion = int(request.form['ano_publicacion']) if request.form['ano_publicacion'] else None 
+        except ValueError:
+            ano_publicacion = None
+            
+        genero_id = request.form.get('genero_id') # Obtiene el ID del <select>
+        if not genero_id: # Si el usuario no seleccionó
+            genero_id = None
         # -------------------
 
         if titulo and autor:
@@ -266,8 +314,10 @@ def agregar_libro():
                 titulo=titulo, 
                 autor=autor, 
                 propietario=current_user,
-                paginas_totales=paginas_totales, # Guardamos el valor
-                pagina_actual=0                 # Empezamos en la página 0
+                paginas_totales=paginas_totales,
+                pagina_actual=0,
+                ano_publicacion=ano_publicacion, # Guardamos el año
+                genero_id=genero_id              # Guardamos el ID del género
             )
             db.session.add(nuevo_libro)
             db.session.commit()
@@ -280,34 +330,40 @@ def agregar_libro():
 @app.route('/actualizar_progreso/<int:id_libro>', methods=['GET', 'POST'])
 @login_required
 def actualizar_progreso(id_libro):
-    # Buscamos el libro o damos error 404
     libro = Libro.query.get_or_404(id_libro)
-
-    # Verificamos que el libro pertenezca al usuario actual
     if libro.propietario != current_user:
-        flash('No tienes permiso para editar este libro.', 'danger')
-        abort(403) # Error de "Prohibido"
+        abort(403)
 
     if request.method == 'POST':
         try:
-            # Obtenemos la página actual del formulario
+            # --- Lógica de Progreso (Existente) ---
             pagina_actual = int(request.form['pagina_actual'])
-
-            # Validaciones
-            if pagina_actual < 0:
-                pagina_actual = 0
-            # Evitamos que ponga una pág actual mayor al total
+            if pagina_actual < 0: pagina_actual = 0
             if libro.paginas_totales > 0 and pagina_actual > libro.paginas_totales:
                 pagina_actual = libro.paginas_totales
-            
-            # Actualizamos el libro
             libro.pagina_actual = pagina_actual
 
-            # Lógica automática de "Leído"
+            # --- LÓGICA CLAVE DE REPORTES ---
             if libro.paginas_totales > 0 and libro.pagina_actual == libro.paginas_totales:
+                # Si el libro no estaba leído, marca la fecha de hoy
+                if not libro.leido:
+                    libro.fecha_leido = datetime.now() 
                 libro.leido = True
             else:
-                libro.leido = False # Si regresa páginas, se marca como no leído
+                # Si el usuario regresa el progreso, el libro ya no está "terminado"
+                libro.leido = False
+                libro.fecha_leido = None # Quita la fecha
+            # --------------------------------
+
+            # --- Lógica Nueva (Año y Género) ---
+            try:
+                libro.ano_publicacion = int(request.form['ano_publicacion']) if request.form['ano_publicacion'] else None
+            except ValueError:
+                libro.ano_publicacion = None
+            
+            genero_id = request.form.get('genero_id')
+            libro.genero_id = int(genero_id) if genero_id else None
+            # -----------------------------------
 
             db.session.commit()
             flash('¡Progreso actualizado con éxito!', 'success')
@@ -317,8 +373,9 @@ def actualizar_progreso(id_libro):
             flash('Por favor, introduce un número válido.', 'danger')
             return redirect(url_for('actualizar_progreso', id_libro=id_libro))
 
-    # Si es GET, mostramos la página de actualización
-    return render_template('actualizar_progreso.html', libro=libro)
+    # Si es GET, pasamos los géneros a la plantilla
+    generos = Genero.query.all()
+    return render_template('actualizar_progreso.html', libro=libro, generos=generos)
 
 @app.route('/borrar/<int:id_libro>')
 @login_required
@@ -338,16 +395,51 @@ def borrar_libro(id_libro):
     return redirect(url_for('biblioteca'))
 # --- Rutas de ADMIN ---
 
-@app.route('/admin')
-@login_required  # Primero, debe estar logueado
-@admin_required  # Segundo, debe ser admin
+@app.route('/admin', methods=['GET', 'POST'])
+@login_required
+@admin_required
 def admin_dashboard():
-    # El admin puede ver TODOS los usuarios y libros
-    todos_los_usuarios = Usuario.query.all()
-    todos_los_libros = Libro.query.all()
-    return render_template('admin.html', 
-                           usuarios=todos_los_usuarios, 
-                           libros=todos_los_libros)
+    # --- Estadísticas Generales (siempre se calculan) ---
+    total_usuarios = Usuario.query.count()
+    total_libros_sitio = Libro.query.count() # Renombrada para claridad
+
+    # --- Lógica de Reportes con Filtro de Fecha ---
+    fecha_inicio_str = request.form.get('fecha_inicio')
+    fecha_fin_str = request.form.get('fecha_fin')
+    query_base = Libro.query.filter(Libro.leido == True)
+    
+    if fecha_inicio_str and fecha_fin_str:
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d')
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d') + timedelta(days=1)
+            query_base = query_base.filter(
+                Libro.fecha_leido >= fecha_inicio,
+                Libro.fecha_leido < fecha_fin
+            )
+        except ValueError:
+            flash("Formato de fecha inválido. Usa AAAA-MM-DD.", "danger")
+            query_base = Libro.query.filter(Libro.leido == True)
+    
+    total_leidos_periodo = query_base.count()
+    generos_populares = query_base.join(Genero) \
+                                   .group_by(Genero.nombre) \
+                                   .with_entities(Genero.nombre, func.count(Libro.id).label('total')) \
+                                   .order_by(desc('total')) \
+                                   .all()
+
+    # --- LÓGICA ANTIGUA (GESTIÓN DE USUARIOS) - La volvemos a añadir ---
+    usuarios = Usuario.query.all()
+    # ------------------------------------------------------------------
+    
+    return render_template('admin.html',
+                           total_usuarios=total_usuarios,
+                           total_libros=total_libros_sitio, # Nombre nuevo
+                           total_leidos_periodo=total_leidos_periodo,
+                           generos_populares=generos_populares,
+                           fecha_inicio=fecha_inicio_str,
+                           fecha_fin=fecha_fin_str,
+                           usuarios=usuarios # Pasamos la lista de usuarios
+                           )
 
 @app.route('/admin/delete_user/<int:id_usuario>')
 @login_required
@@ -434,9 +526,8 @@ def perfil():
     return render_template('perfil.html')
 
     
-# --- Punto de entrada (para ejecutar con 'python app.py') ---
 if __name__ == '__main__':
-    # Creación de las tablas (solo si no existen)
     with app.app_context():
-        db.create_all()
+        db.create_all()        # 1. Crea las tablas
+        inicializar_generos()  # 2. Puebla los géneros
     app.run(debug=True)

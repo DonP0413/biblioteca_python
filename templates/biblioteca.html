@@ -3,12 +3,7 @@
 {% block content %}
     <div style="margin-bottom: 20px;">
         <form method="GET" action="{{ url_for('biblioteca') }}" style="display: flex; gap: 10px;">
-            <input type="search" 
-                   name="q" 
-                   placeholder="Buscar por título..." 
-                   class="form-control" 
-                   value="{{ termino_busqueda or '' }}" 
-                   style="flex: 1;">
+            <input type="search" name="q" placeholder="Buscar por título..." class="form-control" value="{{ termino_busqueda or '' }}" style="flex: 1;">
             <button type="submit" class="btn btn-primario">Buscar</button>
         </form>
     </div>
@@ -16,22 +11,25 @@
     <h3>Añadir Nuevo Libro (Create)</h3>
     <form action="{{ url_for('agregar_libro') }}" method="POST" style="display: flex; flex-wrap: wrap; gap: 10px;">
         <input type="text" name="titulo" placeholder="Título del libro" class="form-control" required style="flex: 2 1 200px;">
-        <input type="text" name="autor" placeholder="Autor" class="form-control" required style="flex: 1 1 150px;">
+        <input type="text" name="autor" placeholder="Autor" class="form-control" required style="flex: 2 1 150px;">
         
-        <input type="number" 
-               name="paginas_totales" 
-               placeholder="Páginas Totales" 
-               class="form-control" 
-               required 
-               min="0"
-               style="flex: 1 1 100px;">
+        <input type="number" name="paginas_totales" placeholder="Pág. Totales" class="form-control" required min="0" style="flex: 1 1 80px;">
+        
+        <input type="number" name="ano_publicacion" placeholder="Año" class="form-control" min="0" max="2100" style="flex: 1 1 80px;">
+
+        <select name="genero_id" class="form-control" style="flex: 1 1 120px;">
+            <option value="">-- Género --</option>
+            {% for genero in generos %}
+            <option value="{{ genero.id }}">{{ genero.nombre }}</option>
+            {% endfor %}
+        </select>
         
         <button type="submit" class="btn btn-primario" style="flex: 0 1 auto;">Añadir</button>
     </form>
 
     <hr style="border: 0; border-top: 1px solid var(--color-fondo); margin: 30px 0;">
 
-    <h3>Tus Libros (Read, Update, Delete)</h3>
+    <h3>Tus Libros</h3>
     {% if libros %}
         {% for libro in libros %}
             {% set progreso = 0 %}
@@ -41,7 +39,21 @@
 
             <div class="libro {% if libro.leido %}leido{% endif %}">
                 <span class="libro-info" style="flex: 1;">
-                    <strong>{{ libro.titulo }}</strong> - <em>{{ libro.autor }}</em>
+                    <strong>{{ libro.titulo }}</strong>
+                    <div class="libro-info-details">
+                        {{ libro.autor }}
+                        {% if libro.ano_publicacion %}({{ libro.ano_publicacion }}){% endif %}
+                        {% if libro.genero %}
+                            <span class="genero-tag">{{ libro.genero.nombre }}</span>
+                        {% endif %}
+
+                        {% if libro.leido and libro.fecha_leido %}
+                            <br>
+                            <strong style="color: var(--color-acento);">
+                                Leído el: {{ libro.fecha_leido.strftime('%d-%m-%Y') }}
+                            </strong>
+                        {% endif %}
+                    </div>
                 </span>
                 
                 <div class="libro-progress">

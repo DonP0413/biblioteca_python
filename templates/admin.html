@@ -2,7 +2,57 @@
 
 {% block content %}
     <h3>Panel de Administración</h3>
-    <p>Has iniciado sesión como Administrador.</p>
+    <p>Bienvenido, {{ current_user.username }}. Aquí tienes las estadísticas del sitio.</p>
+
+    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+        <div class="libro" style="flex: 1; text-align: center;">
+            <h4 style="margin: 0; color: var(--color-primario);">Usuarios Totales</h4>
+            <strong style="font-size: 2.5em;">{{ total_usuarios }}</strong>
+        </div>
+        <div class="libro" style="flex: 1; text-align: center;">
+            <h4 style="margin: 0; color: var(--color-primario);">Libros Totales en Sitio</h4>
+            <strong style="font-size: 2.5em;">{{ total_libros }}</strong>
+        </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid var(--color-fondo); margin: 30px 0;">
+
+    <h4>Reportes de Libros Leídos</h4>
+    
+    <form method="POST" action="{{ url_for('admin_dashboard') }}" style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px;">
+        <div class="form-group" style="flex: 1;">
+            <label for="fecha_inicio">Desde:</label>
+            <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" value="{{ fecha_inicio or '' }}">
+        </div>
+        <div class="form-group" style="flex: 1;">
+            <label for="fecha_fin">Hasta:</label>
+            <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" value="{{ fecha_fin or '' }}">
+        </div>
+        <button type="submit" class="btn btn-primario">Filtrar</button>
+    </form>
+
+    <div class="libro" style="background-color: var(--color-fondo); border: none; display: block; align-items: normal;">
+        <h5>
+            Resultados del Periodo
+            <span style="font-weight: 400; font-size: 0.8em;">
+                {% if fecha_inicio %}(Desde {{ fecha_inicio }} hasta {{ fecha_fin }}){% else %}(Todo el tiempo){% endif %}
+            </span>
+        </h5>
+        <p>
+            <strong>Total de libros leídos en este periodo:</strong>
+            <span style="font-size: 1.2em; font-weight: 700;">{{ total_leidos_periodo }}</span>
+        </p>
+        <p><strong>Géneros más leídos en este periodo:</strong></p>
+        {% if generos_populares %}
+            <ol style="padding-left: 20px; margin-top: 10px;">
+            {% for genero, total in generos_populares %}
+                <li><strong>{{ genero }}</strong> ({{ total }} libros)</li>
+            {% endfor %}
+            </ol>
+        {% else %}
+            <p>No se encontraron libros leídos en este periodo.</p>
+        {% endif %}
+    </div>
 
     <hr style="border: 0; border-top: 1px solid var(--color-fondo); margin: 30px 0;">
     
@@ -15,7 +65,7 @@
                     {% if u.is_admin %} <strong style="color: var(--color-peligro);">(Admin)</strong> {% endif %}
                 </span>
                 <span class="libro-actions">
-                    {% if not u.is_admin %}
+                    {% if not u.is_admin and u.id != current_user.id %}
                     <a href="{{ url_for('borrar_usuario_admin', id_usuario=u.id) }}" 
                        class="link-delete" 
                        onclick="return confirm('¿Seguro que quieres borrar a {{ u.username }} y todos sus libros?')">
@@ -27,15 +77,4 @@
         {% endfor %}
     </div>
 
-    <h4 style="margin-top: 30px;">Todos los Libros del Sitio ({{ libros|length }})</h4>
-    <div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
-        {% for libro in libros %}
-            <div class="libro {% if libro.leido %}leido{% endif %}">
-                <span class="libro-info">
-                    <strong>{{ libro.titulo }}</strong> - <em>{{ libro.autor }}</em>
-                    (Dueño: {{ libro.propietario.username }})
-                </span>
-            </div>
-        {% endfor %}
-    </div>
 {% endblock %}
