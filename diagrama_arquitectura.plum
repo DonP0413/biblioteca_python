@@ -1,30 +1,34 @@
 @startuml
-actor "Cliente (Navegador)" as Client
-participant "Controlador\n(app.py - Rutas Flask)" as Controller
-participant "Vista\n(Templates - Jinja2)" as View
-participant "Modelo\n(app.py - SQLAlchemy)" as Model
-database "Base de Datos\n(MySQL)" as DB
+!theme materia
+actor Usuario as User
+participant "Navegador Web" as Nav
+participant "Controlador (app.py)" as C
+participant "Modelo (SQLAlchemy)" as M
+database "Base de Datos (MySQL)" as BD
 
-Client -> Controller: 1. Petición HTTP (ej. GET /biblioteca)
-activate Controller
+== Flujo: Actualizar Progreso de un Libro (Fase II) ==
 
-Controller -> Model: 2. Solicita datos (ej. "dame los libros")
-activate Model
+User -> Nav : 1. Clic en "Actualizar" (Libro ID=5)
+Nav -> C : 2. GET /actualizar_progreso/5
+C -> M : 3. (C) Pide datos del Libro 5\ny lista de Géneros
+M -> BD : 4. (M) SELECT * FROM libro WHERE id=5\nSELECT * FROM genero
+BD --> M : 5. (M) Retorna datos
+M --> C : 6. (C) Retorna objeto 'libro' y 'generos'
+C -> Nav : 7. (V) render_template('actualizar_progreso.html', ...)\ncon datos del libro
+Nav --> User : 8. Muestra formulario para editar
 
-Model -> DB: 3. Ejecuta consulta SQL
-activate DB
-DB --> Model: 4. Devuelve datos (filas de la BD)
-deactivate DB
+... Usuario rellena el formulario ...
 
-Model --> Controller: 5. Devuelve objetos Python (lista de libros)
-deactivate Model
+User -> Nav : 9. Cambia pág. a 50, Género a 3,\ny envía formulario
+Nav -> C : 10. POST /actualizar_progreso/5\n(pagina_actual=50, genero_id=3)
+C -> M : 11. (C) Pide actualizar Libro 5\n(libro.pagina_actual=50, libro.genero_id=3)
 
-Controller -> View: 6. Pasa los datos a la plantilla HTML
-activate View
-View --> Controller: 7. Devuelve HTML renderizado
-deactivate View
+M -> C : 12. (C) Lógica de fecha: Si pág == total\n  -> libro.fecha_leido = datetime.now()
 
-Controller --> Client: 8. Respuesta HTTP (Página HTML)
-deactivate Controller
-
+C -> M : 13. (C) Ordena guardar cambios
+M -> BD : 14. (M) UPDATE libro SET pagina_actual=50,\ngenero_id=3, fecha_leido=... WHERE id=5
+BD --> M : 15. (M) Confirma (Commit)
+M --> C : 16. (C) OK
+C -> Nav : 17. (V) redirect('/biblioteca')
+Nav -> User : 18. Recarga la biblioteca con datos actualizados
 @enduml
